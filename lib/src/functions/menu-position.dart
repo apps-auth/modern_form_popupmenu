@@ -3,7 +3,7 @@ part of modern_form_popupmenu;
 RelativeRect modernFormPopupMenuPosition(
     BuildContext context, ModernFormPopupMenuLocation? menuLocation) {
   if (menuLocation == null) {
-    menuLocation = ModernFormPopupMenuLocation.BottomRight;
+    menuLocation = ModernFormPopupMenuLocation.BottomLeft;
   }
   final RenderBox? bar = context.findRenderObject() as RenderBox?;
   final RenderBox? overlay =
