@@ -1029,6 +1029,42 @@ class _PopupMenuRoute<T> extends PopupRoute<T> {
     );
   }
 
+  // ATENCAO: desvio deste fork em relacao ao popup_menu.dart do Material - nao
+  // existe no upstream. Manter na proxima ressincronizacao.
+  //
+  // Enquanto a rota abre (forward) ou fecha (reverse), nada responde a toque.
+  // Sao dois defeitos, um em cada ponta da animacao:
+  //  - abrindo: o menu cresce com Align(widthFactor/heightFactor) animado e os
+  //    itens ja estao montados dentro, entao um toque no meio da animacao cai
+  //    numa posicao que ainda nao pertence ao item que aparenta estar ali (o
+  //    item selecionado nao e o que a pessoa viu);
+  //  - fechando: _ModalScope ja envolve a pagina num IgnorePointer enquanto o
+  //    status e reverse, e o ModalBarrier de ModalRoute tambem ignora ponteiro
+  //    nesse periodo (`ignoring: !animation.isForwardOrCompleted`): sem
+  //    ninguem para consumir, o toque vaza para a rota de baixo e aciona o
+  //    widget que estiver naquele ponto da tela.
+  // O AbsorbPointer entra aqui, e nao em buildPage, de proposito: buildTransitions
+  // envolve o IgnorePointer que o _ModalScope aplica sobre a pagina, entao este e
+  // o unico ponto acima dele que ainda recebe o hit test durante o fechamento.
+  // Como ele cobre a pagina inteira (que ocupa todo o overlay da rota), o toque e
+  // consumido nas duas pontas e liberado assim que o menu assenta.
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final bool isAnimating = switch (animation.status) {
+      AnimationStatus.forward || AnimationStatus.reverse => true,
+      AnimationStatus.completed || AnimationStatus.dismissed => false,
+    };
+    return AbsorbPointer(
+      absorbing: isAnimating,
+      child: super.buildTransitions(context, animation, secondaryAnimation, child),
+    );
+  }
+
   Set<Rect> _avoidBounds(MediaQueryData mediaQuery) {
     return DisplayFeatureSubScreen.avoidBounds(mediaQuery).toSet();
   }
